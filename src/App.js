@@ -1,8 +1,8 @@
-import logo from './logo.svg';
 import './App.css';
-import React, { useState, createContext, useContext } from "react";
+import React, { useState, createContext, useContext, useEffect } from "react";
 import { FaGithub,FaTwitter,FaLinkedin,FaAdjust } from "react-icons/fa";
 
+const matter = require('gray-matter');
 const themeContext = createContext();
 
 function App() {
@@ -23,10 +23,44 @@ function App() {
   );
 }
 
+function importAll(r) {
+  return r.keys().map(r);
+}
+
+/*
+  Lesson Learn:
+  1.Search all file the local using require.context in Webpack, which already installed in create-react-app
+  https://webpack.js.org/guides/dependency-management/#require-context
+  2.Fetch by js
+  https://javascript.info/fetch
+  3.useEffect with empty [] to prevent infitie call due to trigger react to run the code again
+  https://www.jianshu.com/p/6e525c3686ab
+  4.After v18 of react, useEffect will call twice during Strict Mode
+  https://stackoverflow.com/questions/60618844/react-hooks-useeffect-is-called-twice-even-if-an-empty-array-is-used-as-an-ar
+*/
 function ArticleList() {
+  const [posts, setPosts] = useState([]);
+  const postPaths = importAll(require.context('./post/', true, /\.(md)$/));
+
+  //
+  useEffect(() => {
+    postPaths.forEach(post => {
+      fetch(post)
+        .then(response => {
+          return response.text();
+        })
+        .then(text => {
+          setPosts(prev => [...prev,text]);
+        })
+    });
+  },[]);
+
+
   return (
     <section className='articleList flex-grow-1'>
-      
+      {postPaths} 
+      <br />
+      {posts}
     </section>
   )
 }
