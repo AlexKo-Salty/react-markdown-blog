@@ -2,21 +2,27 @@ import './App.css';
 import React, { useState, createContext, useContext, useEffect } from "react";
 import { FaGithub,FaTwitter,FaLinkedin,FaAdjust } from "react-icons/fa";
 
-const matter = require('gray-matter');
+const showdown = require('showdown');
+const converter = new showdown.Converter({metadata: true});
 const themeContext = createContext();
 
 function App() {
   const [isDarkTheme, setIsDarkTheme] = useState(false);
+  const [currentContent, setCurrentContent] = useState('');
 
   const toggleTheme = () => {
     setIsDarkTheme(prev => !prev);
+  }
+
+  const handleArticleClick = (id) => {
+    setCurrentContent(id);
   }
 
   return (
     <themeContext.Provider value={isDarkTheme}>
       <div className="App container px-0 overflow-hidden">
         <Navbar toggleTheme={toggleTheme} />
-        <ArticleList toggleTheme={toggleTheme} />
+        {currentContent ? <Article text={currentContent} /> :<ArticleList toggleTheme={toggleTheme} handleArticleClick={handleArticleClick}  />}
         <Footer toggleTheme={toggleTheme} />
       </div>
     </themeContext.Provider>
@@ -38,7 +44,7 @@ function importAll(r) {
   4.After v18 of react, useEffect will call twice during Strict Mode
   https://stackoverflow.com/questions/60618844/react-hooks-useeffect-is-called-twice-even-if-an-empty-array-is-used-as-an-ar
 */
-function ArticleList() {
+function ArticleList(props) {
   const [posts, setPosts] = useState([]);
   const postPaths = importAll(require.context('./post/', true, /\.(md)$/));
 
@@ -50,23 +56,43 @@ function ArticleList() {
           return response.text();
         })
         .then(text => {
-          setPosts(prev => [...prev,text]);
+          let html = converter.makeHtml(text);
+          let articleMetadata = converter.getMetadata();
+          setPosts(prev => [...prev,articleMetadata]);
         })
     });
   },[]);
 
-
   return (
     <section className='articleList flex-grow-1'>
-      {postPaths} 
-      <br />
-      {posts}
+      <div className='article_preview_container'>
+        {posts.map(a => <ArticlePreview metadata={a} handleArticleClick={props.handleArticleClick}  />)}
+      </div>
     </section>
   )
 }
 
-function article() {
+function ArticlePreview(props) 
+{
+  const onClick = (id) => {
+    props.handleArticleClick(id);
+  }
 
+  return (
+    <div className='article_preview mx-auto'>
+      <a herf="#" onClick={() => {onClick(props.metadata.title)}}><h3><b>{props.metadata.title}</b></h3></a>
+      <small>{props.metadata.date}</small>
+      <p>{props.metadata.preview}</p>
+    </div>
+  )
+}
+
+function Article(props) {
+  return (
+    <div className='article_detail mx-auto'>
+      {converter.makeHtml(props.text)};
+    </div>
+  )
 }
 
 //Navbar for the blog page

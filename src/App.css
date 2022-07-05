@@ -22,6 +22,27 @@
 .articleList {
   height: 92vh;
   background-color:  #4E545C;
+  display: flow-root;
+}
+
+.article_preview {
+  width: 50%;
+  margin: 20px 10px 40px 10px;
+  border-radius: 10px;
+}
+
+.article_preview h3 {
+  font-size: 2.75rem;
+  color: rgba(255, 255, 0, 0.795);
+  font-family: Montserrat, sans-serif;
+}
+
+.article_preview small {
+  color: #E5E8E8;
+}
+
+.article_preview p {
+  color: #E5E8E8;
 }
 
 .footer {
