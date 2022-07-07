@@ -1,10 +1,17 @@
 import './App.css';
-import React, { useState, createContext, useContext, useEffect } from "react";
+import React, { useState, createContext, useEffect } from "react";
 import { FaGithub,FaTwitter,FaLinkedin,FaAdjust } from "react-icons/fa";
+import { useParams, BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
 const showdown = require('showdown');
 const converter = new showdown.Converter({metadata: true});
 const themeContext = createContext();
+
+function importAll(r) {
+  return r.keys().map(r);
+}
+
+const postPathsGlobal = importAll(require.context('./post/', true, /\.(md)$/));
 
 function App() {
   const [isDarkTheme, setIsDarkTheme] = useState(false);
@@ -22,15 +29,17 @@ function App() {
     <themeContext.Provider value={isDarkTheme}>
       <div className="App container px-0 overflow-hidden">
         <Navbar toggleTheme={toggleTheme} />
-        {currentContent ? <Article text={currentContent} /> :<ArticleList toggleTheme={toggleTheme} handleArticleClick={handleArticleClick}  />}
+        <Router>
+          <Routes>
+            <Route path="/" element={<ArticleList toggleTheme={toggleTheme} handleArticleClick={handleArticleClick}  />} />
+            <Route path=":id" element={<Article text={currentContent} />} />
+          </Routes>
+        </Router>
+        {/* {currentContent ? <Article text={currentContent} /> :<ArticleList toggleTheme={toggleTheme} handleArticleClick={handleArticleClick}  />} */}
         <Footer toggleTheme={toggleTheme} />
       </div>
     </themeContext.Provider>
   );
-}
-
-function importAll(r) {
-  return r.keys().map(r);
 }
 
 /*
@@ -46,17 +55,16 @@ function importAll(r) {
 */
 function ArticleList(props) {
   const [posts, setPosts] = useState([]);
-  const postPaths = importAll(require.context('./post/', true, /\.(md)$/));
 
   //
   useEffect(() => {
-    postPaths.forEach(post => {
+    postPathsGlobal.forEach(post => {
       fetch(post)
         .then(response => {
           return response.text();
         })
         .then(text => {
-          let html = converter.makeHtml(text);
+          converter.makeHtml(text);
           let articleMetadata = converter.getMetadata();
           setPosts(prev => [...prev,articleMetadata]);
         })
@@ -66,7 +74,7 @@ function ArticleList(props) {
   return (
     <section className='articleList flex-grow-1'>
       <div className='article_preview_container'>
-        {posts.map(a => <ArticlePreview metadata={a} handleArticleClick={props.handleArticleClick}  />)}
+        {posts.map(a => <ArticlePreview key={a.link} metadata={a} handleArticleClick={props.handleArticleClick}  />)}
       </div>
     </section>
   )
@@ -74,23 +82,46 @@ function ArticleList(props) {
 
 function ArticlePreview(props) 
 {
-  const onClick = (id) => {
-    props.handleArticleClick(id);
-  }
+  // const onClick = (id) => {
+  //   props.handleArticleClick(id);
+  // }
 
   return (
     <div className='article_preview mx-auto'>
-      <a herf="#" onClick={() => {onClick(props.metadata.title)}}><h3><b>{props.metadata.title}</b></h3></a>
+      <a href={"/" + props.metadata.link}><h3><b>{props.metadata.title}</b></h3></a>
       <small>{props.metadata.date}</small>
       <p>{props.metadata.preview}</p>
     </div>
   )
 }
 
-function Article(props) {
+function Article() {
+  const { id } = useParams();
+  const [content, setContent] = useState("");
+
+  //
+  useEffect(() => {
+    postPathsGlobal.forEach(post => {
+      fetch(post)
+        .then(response => {
+          return response.text();
+        })
+        .then(text => {
+          converter.makeHtml(text);
+          let articleMetadata = converter.getMetadata();
+          if (articleMetadata.link === id)
+          {
+            setContent(text);
+          }
+        })
+    });
+  },[]);
+
+  console.log(content);
+
   return (
-    <div className='article_detail mx-auto'>
-      {converter.makeHtml(props.text)};
+    <div className='article_detail_container flex-grow-1'>
+      <div className='article_detail mx-auto' dangerouslySetInnerHTML={{ __html: content ? converter.makeHtml(content) : "" }}></div>
     </div>
   )
 }
@@ -102,7 +133,6 @@ function Navbar() {
     <div className="row no-gutters">
       <div className='col-1' />
       <div className="col-9 p-1">
-
       </div>
       <div className="col-2 p-1 text-end">
         <button className='btn btn-dark me-4 mt-1'>
