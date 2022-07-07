@@ -19,6 +19,10 @@
   background-color: #000401;
 }
 
+.header a {
+  font-size: calc(10px + 1vmin);
+}
+
 .articleList {
   height: 92vh;
   background-color:  #4E545C;
@@ -46,12 +50,23 @@
 }
 
 .article_detail_container {
+  min-height: 92vh;
   background-color:  #4E545C;
   color: #E5E8E8
 }
 
 .article_detail {
   width: 50%;
+}
+
+.article_detail > *:first-child  {
+  padding-top: 2rem;
+  font-family: Montserrat, sans-serif;
+}
+
+.article_detail > *:last-child  {
+  margin-bottom: 0rem;
+  padding-bottom: 2rem;
 }
 
 .footer {

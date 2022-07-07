@@ -1,10 +1,11 @@
 import './App.css';
 import React, { useState, createContext, useEffect } from "react";
-import { FaGithub,FaTwitter,FaLinkedin,FaAdjust } from "react-icons/fa";
+import { FaGithub,FaTwitter,FaLinkedin,FaAdjust, FaHome } from "react-icons/fa";
 import { useParams, BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
 const showdown = require('showdown');
-const converter = new showdown.Converter({metadata: true});
+const showdownHighlight = require('showdown-highlight');
+const converter = new showdown.Converter({metadata: true, extensions: [showdownHighlight({pre: true})]});
 const themeContext = createContext();
 
 function importAll(r) {
@@ -56,7 +57,8 @@ function App() {
 function ArticleList(props) {
   const [posts, setPosts] = useState([]);
 
-  //
+  //Will rework for only trigger the update state once & sort by post date:
+  //ref : https://stackoverflow.com/questions/53332321/react-hook-warnings-for-async-function-in-useeffect-useeffect-function-must-ret/53572588#53572588
   useEffect(() => {
     postPathsGlobal.forEach(post => {
       fetch(post)
@@ -99,7 +101,7 @@ function Article() {
   const { id } = useParams();
   const [content, setContent] = useState("");
 
-  //
+  //Need rework to prevent loop again to get the selected post
   useEffect(() => {
     postPathsGlobal.forEach(post => {
       fetch(post)
@@ -133,6 +135,12 @@ function Navbar() {
     <div className="row no-gutters">
       <div className='col-1' />
       <div className="col-9 p-1">
+      <a className="link-light m-2"
+          href='./'
+          rel="noopener noreferrer"
+          role='button'>
+            <FaHome />
+          </a>
       </div>
       <div className="col-2 p-1 text-end">
         <button className='btn btn-dark me-4 mt-1'>
