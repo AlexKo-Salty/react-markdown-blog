@@ -14,16 +14,19 @@ function importAll(r) {
 
 const postPathsGlobal = importAll(require.context('./post/', true, /\.(md)$/));
 
+ function formatDate(value) {
+    let date = new Date(value);
+    const day = date.toLocaleString('en-GB', { day: '2-digit' });
+    const month = date.toLocaleString('en-GB', { month: 'short' });
+    const year = date.toLocaleString('en-GB', { year: 'numeric' });
+    return day + '-' + month + '-' + year;
+  }
+
 function App() {
   const [isDarkTheme, setIsDarkTheme] = useState(false);
-  const [currentContent, setCurrentContent] = useState('');
 
   const toggleTheme = () => {
     setIsDarkTheme(prev => !prev);
-  }
-
-  const handleArticleClick = (id) => {
-    setCurrentContent(id);
   }
 
   return (
@@ -32,8 +35,8 @@ function App() {
         <Navbar toggleTheme={toggleTheme} />
         <Router>
           <Routes>
-            <Route path="/" element={<ArticleList toggleTheme={toggleTheme} handleArticleClick={handleArticleClick}  />} />
-            <Route path=":id" element={<Article text={currentContent} />} />
+            <Route path="/" element={<ArticleList toggleTheme={toggleTheme} />} />
+            <Route path=":id" element={<Article toggleTheme={toggleTheme} />} />
           </Routes>
         </Router>
         {/* {currentContent ? <Article text={currentContent} /> :<ArticleList toggleTheme={toggleTheme} handleArticleClick={handleArticleClick}  />} */}
@@ -57,26 +60,39 @@ function App() {
 function ArticleList(props) {
   const [posts, setPosts] = useState([]);
 
-  //Will rework for only trigger the update state once & sort by post date:
-  //ref : https://stackoverflow.com/questions/53332321/react-hook-warnings-for-async-function-in-useeffect-useeffect-function-must-ret/53572588#53572588
   useEffect(() => {
-    postPathsGlobal.forEach(post => {
-      fetch(post)
-        .then(response => {
-          return response.text();
-        })
-        .then(text => {
-          converter.makeHtml(text);
-          let articleMetadata = converter.getMetadata();
-          setPosts(prev => [...prev,articleMetadata]);
-        })
-    });
-  },[]);
+    const fetchData = async () => {
+      let postArray = [];
+      for (let post of postPathsGlobal) {
+        await fetch(post)
+                .then(response => {
+                  return response.text();
+                })
+                .then(text => {
+                  converter.makeHtml(text);
+                  let articleMetadata = converter.getMetadata();
+                  postArray.push({
+                    title: articleMetadata.title,
+                    date: new Date(articleMetadata.date),
+                    cta: articleMetadata.cta,
+                    preview: articleMetadata.preview,
+                    link: articleMetadata.link
+                  });
+                })
+      }
+      
+      setPosts(postArray.sort((a,b) => b.date - a.date));
+    }
+
+    fetchData();
+  },[])
 
   return (
     <section className='articleList flex-grow-1'>
       <div className='article_preview_container'>
-        {posts.map(a => <ArticlePreview key={a.link} metadata={a} handleArticleClick={props.handleArticleClick}  />)}
+        {posts.map((post) => (
+            <ArticlePreview link={post.link} title={post.title} preview={post.preview} date={formatDate(post.date)} />
+        ))}
       </div>
     </section>
   )
@@ -90,14 +106,14 @@ function ArticlePreview(props)
 
   return (
     <div className='article_preview mx-auto'>
-      <a href={"/" + props.metadata.link}><h3><b>{props.metadata.title}</b></h3></a>
-      <small>{props.metadata.date}</small>
-      <p>{props.metadata.preview}</p>
+      <a href={"/" + props.link}><h3><b>{props.title}</b></h3></a>
+      <small>{props.date}</small>
+      <p>{props.preview}</p>
     </div>
   )
 }
 
-function Article() {
+function Article(props) {
   const { id } = useParams();
   const [content, setContent] = useState("");
 
@@ -119,8 +135,6 @@ function Article() {
     });
   },[]);
 
-  console.log(content);
-
   return (
     <div className='article_detail_container flex-grow-1'>
       <div className='article_detail mx-auto' dangerouslySetInnerHTML={{ __html: content ? converter.makeHtml(content) : "" }}></div>
@@ -132,20 +146,24 @@ function Article() {
 function Navbar() {
   return(
     <header className='header'>
-    <div className="row no-gutters">
+    <div className="row no-gutters header-container">
       <div className='col-1' />
-      <div className="col-9 p-1">
-      <a className="link-light m-2"
+      <div className="col-9 my-auto">
+       <b>Salty Bloooog</b>
+       <a className="link-light m-2"
           href='./'
           rel="noopener noreferrer"
           role='button'>
             <FaHome />
           </a>
       </div>
-      <div className="col-2 p-1 text-end">
-        <button className='btn btn-dark me-4 mt-1'>
-          <FaAdjust />
-        </button>
+      <div className="col-2 p-1">
+      {/* <a className="link-light m-2"
+          href='./'
+          rel="noopener noreferrer"
+          role='button'>
+            <FaAdjust />
+          </a> */}
       </div>
     </div>
   </header>
@@ -156,9 +174,9 @@ function Navbar() {
 function Footer() {
   return (
     <footer className="footer">
-      <div className="row no-gutters">
+      <div className="row no-gutters footer-container">
         <div className='col-1' />
-        <div className="col-9 p-1">
+        <div className="col-9 my-auto">
           <a className="link-light m-2"
           href='https://twitter.com/Saltu_HKER'
           target="_blank"
@@ -181,7 +199,7 @@ function Footer() {
             <FaLinkedin />
           </a>
           </div>
-          <div className="col-2 p-3 text-end">
+          <div className="col-2 my-auto">
             <div className='me-4 mt-1'>
               © 2022 Alex Ko
             </div>
